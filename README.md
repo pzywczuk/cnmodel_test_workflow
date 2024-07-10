@@ -14,6 +14,11 @@ install.packages(c("dplyr", "tidyr", "ggplot2", "patchwork", "cowplot", "visdat"
                    "here", "lubridate", "readr", "naniar", "purrr", "remotes"))
 remotes::install_github("stineb/rsofun", ref = "cnmodel")
 
+```
+
+## Repository Structure
+
+```R
 reproducible-workflow/
 |-- data/
 |   |-- ch0e2_drivers.rds       # Input data file
@@ -21,4 +26,22 @@ reproducible-workflow/
 |   |-- cn_model_test_run.R              # Main workflow script
 |-- README.md                   # This README file
 
-`` 
+```
+
+## Included Libraries
+
+```R
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+library(cowplot)
+library(visdat)
+library(here)
+library(lubridate)
+library(readr)
+library(naniar)
+library(purrr)
+library(rsofun)
+
+```
