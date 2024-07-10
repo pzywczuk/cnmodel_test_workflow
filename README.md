@@ -24,6 +24,8 @@ reproducible-workflow/
 |   |-- ch0e2_drivers.rds       # Input data file
 |-- scripts/
 |   |-- cn_model_test_run.R              # Main workflow script
+|-- output/                      # Folder for outputs 
+|   |-- 
 |-- README.md                   # This README file
 
 ```
