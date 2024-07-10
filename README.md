@@ -16,6 +16,9 @@ remotes::install_github("stineb/rsofun", ref = "cnmodel")
 
 ```
 
+Also, ensure you create an 'output' folder in the cloned repository. This is where the 'output' graphs will save.
+
+
 ## Repository Structure
 
 ```R
