@@ -10,35 +10,34 @@ library(visdat)
 library(here)
 library(lubridate)
 library(readr)
-library(naniar)
+# library(naniar)
 library(purrr)
 
-if (!require(remotes)) {
-  install.packages("remotes")
-}
-remotes::install_github("stineb/rsofun", ref = "cnmodel")
+# if (!require(remotes)) {
+#   install.packages("remotes")
+# }
+# remotes::install_github("stineb/rsofun", ref = "cnmodel")
 library(rsofun)
 
 #----------------------------------------------------------------
-# Load Data
+# Load Data------------
 #----------------------------------------------------------------
 
-# FLUXNET 
-ch0e2_drivers <- readRDS(here("cnmodel_test_workflow", "data", "ch0e2_drivers.rds"))
-
+# FLUXNET
+ch0e2_drivers <- readRDS(here("data", "ch0e2_drivers.rds"))
 
 #----------------------------------------------------------------
-# N deposition
+# N deposition----------
 #----------------------------------------------------------------
 
-# Reactive N input needs to be in gN per day 
-# added to forcing time series: specify quantity of N added on which day 
+# Reactive N input needs to be in gN per day
+# added to forcing time series: specify quantity of N added on which day
 
-# Example N input given a constant rate each day 
+# Example N input given a constant rate each day
 n_input_test <- function(data) {
   data <- data %>%
     mutate(forcing = purrr::map(
-      forcing, 
+      forcing,
       ~mutate(
         .,
         fharv = 0.0,
@@ -51,16 +50,16 @@ n_input_test <- function(data) {
 ch0e2_drivers <- n_input_test(ch0e2_drivers)
 
 #----------------------------------------------------------------
-# Harvesting 
+# Harvesting------------
 #----------------------------------------------------------------
 
-# The fraction of biomass harvested per day needs to be specified in the forcing time series 
-# cseed and nseed new seeds added after harvesting 
-# Example driver update assumes harvesting is 0 and new seeds planted after harvest 
+# The fraction of biomass harvested per day needs to be specified in the forcing time series
+# cseed and nseed new seeds added after harvesting
+# Example driver update assumes harvesting is 0 and new seeds planted after harvest
 
 fharv_seed <- function(data, use_cseed = 5, cn_seed = 20) {
   use_nseed <- use_cseed / cn_seed
-  
+
   data <- data %>%
     mutate(
       forcing = purrr::map(
@@ -71,16 +70,16 @@ fharv_seed <- function(data, use_cseed = 5, cn_seed = 20) {
           nseed = ifelse(month(date) == 2 & mday(date) == 15, use_nseed, 0.0))
       )
     )
-  
+
   return(data)
 }
 
 ch0e2_drivers <- fharv_seed(ch0e2_drivers)
 
 #----------------------------------------------------------------
-# Simulation parameters
+# Simulation parameters------------
 #----------------------------------------------------------------
-# The spinup of cn_model must be long enough to equilibrate fluxes 
+# The spinup of cn_model must be long enough to equilibrate fluxes
 
 # Function to modify specific columns in each dataframe
 modify_params <- function(df_list, spinupyears_val, recycle_val) {
@@ -91,7 +90,7 @@ modify_params <- function(df_list, spinupyears_val, recycle_val) {
            spinupyears = spinupyears_val,
            recycle = recycle_val)
   })
-  
+
   return(df_list)
 }
 
@@ -99,12 +98,12 @@ modify_params <- function(df_list, spinupyears_val, recycle_val) {
 ch0e2_drivers$params_siml <- modify_params(ch0e2_drivers$params_siml, 2021, 2)
 
 #----------------------------------------------------------------
-# Define model parameter values 
+# Define model parameter values------------
 #----------------------------------------------------------------
 
 pars <- list(
   # P-model
-  kphio = 0.04998,    # setup ORG in Stocker et al. 2020 GMD
+  kphio = 0.07,             # setup ORG in Stocker et al. 2020 GMD
   kphio_par_a = 0.0,        # set to zero to disable temperature-dependence of kphio
   kphio_par_b = 1.0,
   soilm_thetastar = 0.6 * 240,  # to recover old setup with soil moisture stress
@@ -113,7 +112,7 @@ pars <- list(
   rd_to_vcmax = 0.014,      # value from Atkin et al. 2015 for C3 herbaceous
   tau_acclim = 30.0,
   kc_jmax = 0.41,
-  
+
   # Plant
   f_nretain = 0.500000,
   fpc_tree_max = 0.950000,
@@ -121,12 +120,12 @@ pars <- list(
   r_root = 2*0.913000,
   r_sapw = 2*0.044000,
   exurate = 0.003000,
-  
+
   k_decay_leaf = 1.90000,
   k_decay_root = 1.90000,
   k_decay_labl = 1.90000,
   k_decay_sapw = 1.90000,
-  
+
   r_cton_root = 37.0000,
   r_cton_wood = 100.000,
   r_cton_seed = 15.0000,
@@ -135,12 +134,12 @@ pars <- list(
   r_n_cw_v = 0, # assumed that LMA is independent of Vcmax25; previously: 0.1,
   r_ctostructn_leaf = 1.3 * 45.84125, # see ln_cn_review/vignettes/analysis_leafn_vcmax_field.Rmd, l.699; previously used: 80.0000,
   kbeer = 0.500000,
-  
+
   # Phenology (should be PFT-specific)
   gddbase = 5.0,
   ramp = 0.0,
   phentype = 2.0,
-  
+
   # Soil physics (should be derived from params_soil, fsand, fclay, forg, fgravel)
   perc_k1 = 5.0,
   thdiff_wp = 0.2,
@@ -152,7 +151,7 @@ pars <- list(
   fsand = 0.82,
   fclay = 0.06,
   fsilt = 0.12,
-  
+
   # Water and energy balance
   kA = 107,
   kalb_sw = 0.17,
@@ -167,7 +166,7 @@ pars <- list(
   kw = 0.26,
   komega = 283.0,
   maxmeltrate = 3.0,
-  
+
   # Soil BGC
   klitt_af10 = 1.2,
   klitt_as10 = 0.35,
@@ -180,17 +179,17 @@ pars <- list(
   cton_microb = 10.0,
   cton_soil = 9.77,
   fastfrac = 0.985,
-  
+
   # N uptake
   eff_nup = 0.0001000,
   minimumcostfix = 1.000000,
   fixoptimum = 25.15000,
   a_param_fix = -3.62000,
   b_param_fix = 0.270000,
-  
+
   # Inorganic N transformations (re-interpreted for simple ntransform model)
   maxnitr =  0.00005,
-  
+
   # Inorganic N transformations for full ntransform model (not used in simple model)
   non = 0.01,
   n2on = 0.0005,
@@ -198,15 +197,15 @@ pars <- list(
   kdoc = 17.0,
   docmax = 1.0,
   dnitr2n2o = 0.01,
-  
+
   # Additional parameters - previously forgotten
   frac_leaf = 0.5,         # after wood allocation
   frac_wood = 0,           # highest priority in allocation
   frac_avl_labl = 0.1,
-  
+
   # for development
   tmppar = 9999,
-  
+
   # simple N uptake module parameters
   nuptake_kc = 600,
   nuptake_kv = 5,
@@ -214,7 +213,8 @@ pars <- list(
 )
 
 #----------------------------------------------------------------
-# Run the model for these parameters using ch-oe1
+# Run the model ------------
+# for these parameters using ch-oe1
 #----------------------------------------------------------------
 
 # Create output directories
@@ -237,7 +237,7 @@ dir.create(vignettes_dir, showWarnings = FALSE)
 vignettes_out_dir <- file.path(vignettes_dir, "out")
 dir.create(vignettes_out_dir, showWarnings = FALSE)
 
-# C-only run 
+# C-only run
 # Define whether to use interactive C-N cycling
 
 # Function to add a new column 'c_only' with value TRUE to each dataframe
@@ -245,9 +245,9 @@ add_c_only_column <- function(df_list) {
   # Map over each dataframe in the list
   df_list <- map(df_list, ~ {
     # Add 'c_only' column with value TRUE
-    mutate(.x, c_only = FALSE)
+    mutate(.x, c_only = TRUE)
   })
-  
+
   return(df_list)
 }
 
@@ -255,44 +255,60 @@ add_c_only_column <- function(df_list) {
 ch0e2_drivers$params_siml <- add_c_only_column(ch0e2_drivers$params_siml)
 
 #----------------------------------------------------------------
-# Run CN model (FLUXNET DATA) 
+# Run CN model (FLUXNET DATA) ------------
 #----------------------------------------------------------------
 
 cnmodel_run_plot <- function(drivers, pars, df_name) {
   # Run the model
   output <- runread_cnmodel_f(drivers, par = pars)
-  
+
   # Extract data
   model_data <- output$data[[1]] %>% as_tibble()
-  
+
   #### LAI -----------------------------
   gg1 <- model_data %>%
-    ggplot(aes(date, lai)) + 
+    ggplot(aes(date, lai)) +
     geom_line() +
     labs(x = "", y = expression(paste("LAI (m"^2, " m"^-2, ")"))) +
     theme_classic()
-  
+
+  # XXX compare this to LAI in FluxDataKit daily CSV files
+
+  #### fAPAR -----------------------------
+  gg1 <- model_data %>%
+    mutate(fapar = 1 - exp(-pars$kbeer * lai)) |>
+    ggplot(aes(date, fapar)) +
+    geom_line() +
+    labs(x = "", y = expression(paste("fAPAR (unitless)"))) +
+    theme_classic()
+
+  # XXX compare this to FPAR in FluxDataKit rsofun drivers or daily CSV files
+
   #### GPP -----------------------------
   gg2 <- model_data %>%
-    ggplot(aes(date, gpp)) + 
+    ggplot(aes(date, gpp)) +
     geom_line() +
     labs(x = "", y = expression(paste("GPP (gC m"^-2, " d"^-1, ")"))) +
     theme_classic()
-  
+
+  # XXX compare this to GPP in FluxDataKit rsofun drivers or daily CSV files
+
   #### NEP -----------------------------
   gg3 <- model_data %>%
-    ggplot(aes(date, gpp - rleaf - rwood - rroot - rhet)) + 
+    ggplot(aes(date, gpp - rleaf - rwood - rroot - rhet)) +
     geom_line() +
     labs(x = "", y = expression(paste("NEP (gC m"^-2, " d"^-1, ")"))) +
     theme_classic()
-  
+
+  # XXX compare this to NEE in FluxDataKit rsofun drivers or daily CSV files
+
   #### cumulative NEP -----------------------------
   gg4 <- model_data %>%
-    ggplot(aes(date, cumsum(gpp - rleaf - rwood - rroot - rhet - rgrow))) + 
+    ggplot(aes(date, cumsum(gpp - rleaf - rwood - rroot - rhet - rgrow))) +
     geom_line() +
     labs(x = "", y = expression(paste("Cum. NEP (gC m"^-2, ")"))) +
     theme_classic()
-  
+
   # Combine plots
   combined_plot <- plot_grid(
     gg1,
@@ -301,17 +317,19 @@ cnmodel_run_plot <- function(drivers, pars, df_name) {
     gg4,
     ncol = 1
   )
-  
+
   # Construct the filename using the dataframe name
   filename <- paste0(df_name, ".png")
-  
+
   # Save the plot in the 'output' folder of the repository
-  ggsave(filename = here("cnmodel_test_workflow", "output", filename), plot = combined_plot, height = 12, width = 8, dpi = 300)
-  message("Plot saved successfully: ", here("cnmodel_test_workflow", "output", filename))
-  
+  ggsave(filename = here( "output", filename), plot = combined_plot, height = 12, width = 8, dpi = 300)
+  message("Plot saved successfully: ", here( "output", filename))
+
   # Display the plot
   print(combined_plot)
 }
 
 # Call the function with the updated parameters
 cnmodel_run_plot(ch0e2_drivers, pars, "CH-0E2_NTRUE")
+
+
